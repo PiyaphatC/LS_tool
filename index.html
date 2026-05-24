@@ -685,6 +685,27 @@
 let species = [];
 let context = { location: '', project: '' };
 let selectedExportFormat = 'csv';
+
+// ─── Google Sheets Integration ────────────────────────
+const APPS_SCRIPT_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+
+async function sendToSheet(parsed) {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') return;
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        project: context.project,
+        location: context.location,
+        ...parsed
+      })
+    });
+  } catch(e) {
+    console.warn('Sheet sync failed:', e);
+  }
+}
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 // ─── Context ─────────────────────────────────────────
@@ -711,6 +732,7 @@ async function addSpecies() {
     const data = await callClaude(prompt);
     const parsed = parseResponse(data, name, nativeOverride, waterOverride);
     species.push({ id: Date.now(), ...parsed });
+    sendToSheet(parsed);
     renderTable();
     input.value = '';
     document.getElementById('nativeOverride').value = '';
